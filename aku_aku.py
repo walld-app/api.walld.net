@@ -1,4 +1,5 @@
 #must run by cron every hour to update db with wallpapers that sits in folders
+#also rms old files 
 import os, sqlite3
 SEARCH_DIR = '/mnt/ntfs-drive/walld_pics'
 DB_FILE = SEARCH_DIR + '/pics.db'
