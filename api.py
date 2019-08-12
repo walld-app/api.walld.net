@@ -1,6 +1,5 @@
 import flask
 from random import choice
-from flask import request, jsonify
 import sqlite3
 
 app = flask.Flask(__name__)
@@ -23,18 +22,18 @@ def api_all():
     conn.row_factory = dict_factory
     cur = conn.cursor()
     all_books = cur.execute('SELECT * FROM books;').fetchall()
-    return jsonify(all_books)
+    return flask.jsonify(all_books)
 
 @app.route('/apiv01/random', methods=['GET'])
 def api_random():
     conn = sqlite3.connect('pics.db')
     conn.row_factory = dict_factory
     cur = conn.cursor()
-    all_books = cur.execute('SELECT * FROM pics;').fetchall()
-    return jsonify(choice(all_books))
+    all_books = cur.execute('SELECT * FROM pics').fetchall()
+    return flask.jsonify(choice(all_books))
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return jsonify({'error':'404', 'success':'false'}), 404
+    return flask.jsonify({'error':'404', 'success':'false'}), 404
 
 app.run()
