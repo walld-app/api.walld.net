@@ -1,18 +1,22 @@
 #This code fills db that api is looking for, providing with urls and
 #other stuff, kindly and jently.
 #For now (12.08.19) it can only write things like file name, category.
-#sub_category and url, need to add pillow maybe?
+#sub_category and url
+#Need to add pillow maybe? DONE
 
 #must run by cron every day to update db with wallpapers that sits in folders
 
 import os, sqlite3
+from PIL import Image
 
 SEARCH_DIR = '/mnt/ntfs-drive/walld_pics/'
 DB_FILE = SEARCH_DIR + 'pics.db'
-PART_OF_URL = 'http://walld.net/pics/'
+PART_OF_URL = 'https://walld.net/pics/'
+
 
 TABLE_COLUMNS = """CREATE TABLE pics (id text, category text,
-sub_category text, file_name text, resolution text, ratio text, url text)"""
+sub_category text, file_name text, width text, \
+height text, ratio text, url text)"""
 
 #checks if base exists, if not, creates one
 if os.path.exists(DB_FILE):
@@ -46,18 +50,21 @@ def sync_add():
             print('-'*30 + '>' + sub_category + '<' + '-'*30)
             for filename in os.listdir(SEARCH_DIR +
             category + '/'+ sub_category):
-
+                full_path = SEARCH_DIR + category + \
+                '/' + sub_category + '/' + filename
                 sql = "SELECT file_name FROM pics WHERE \
                 file_name='{}'".format(filename)
                 cursor.execute(sql)
                 ll = cursor.fetchone()
                 if not ll:
                     print(filename, 'is new here')
+                    with Image.open(full_path) as img:
+                        width, height = img.size
                     command = [('id_here', category, sub_category, filename,\
-                    'resolution_here', 'ratio_here', PART_OF_URL + category + \
+                    width, height, 'ratio_here', PART_OF_URL + category + \
                     '/' + sub_category + '/' + filename)]
                     cursor.executemany("INSERT INTO pics \
-                    VALUES (?, ?, ?, ?, ?, ?, ?)", command)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)", command)
 
 def sync_del():
     print('*'*33, 'DELETE','*'*32)
