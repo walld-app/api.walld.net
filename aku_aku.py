@@ -6,7 +6,7 @@
 
 #must run by cron every day to update db with wallpapers that sits in folders
 
-import os, sqlite3
+import os, sqlite3, config
 from PIL import Image
 
 TABLE_COLUMNS = """CREATE TABLE pics (id text, category text,
