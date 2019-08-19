@@ -27,7 +27,7 @@ def api_all():
 
 @app.route('/apiv01/random', methods=['GET'])
 def api_random():
-    conn = sqlite3.connect(config.DB)
+    conn = sqlite3.connect(config.DB_FILE)
     conn.row_factory = dict_factory
     cur = conn.cursor()
     all_books = cur.execute('SELECT * FROM pics').fetchall()
