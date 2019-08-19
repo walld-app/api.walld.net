@@ -31,8 +31,8 @@ else:
     cursor.execute(TABLE_COLUMNS)
     conn.commit()
 
-def list_dir(dir):
-    subfolders = [f.name for f in os.scandir(dir) if f.is_dir() ]
+def list_dir(directory):
+    subfolders = [f.name for f in os.scandir(directory) if f.is_dir() ]
     return subfolders
 
 def sync_add():
@@ -47,8 +47,8 @@ def sync_add():
             category + '/'+ sub_category):
                 full_path = config.SEARCH_DIR + category + \
                 '/' + sub_category + '/' + filename
-                sql = "SELECT file_name FROM pics WHERE \
-                file_name='{}'".format(filename)
+                sql = "SELECT {} FROM {} WHERE \
+                file_name='{}'".format('file_name','pics', filename)
                 cursor.execute(sql)
                 ll = cursor.fetchone()
                 if not ll:
@@ -62,16 +62,16 @@ def sync_add():
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)", command)
 
 def sync_del():
+    #This section emplements deleting non existing file.
+    #if file was deleted for some reason, than we need to update our db
     print('*'*33, 'DELETE','*'*32)
-    '''This section emplements deleting non existing file.
-    if file was deleted for some reason, than we need to update our db'''
     for i in cursor.execute('SELECT * FROM pics'):
         file_path = config.SEARCH_DIR + i['category'] + \
         '/' + i['sub_category'] + '/' + i['file_name']
         if not os.path.exists(file_path):
             print('deleting', file_path, 'from sql base')
-            sql = "DELETE FROM pics WHERE file_name = '{}'"\
-            .format(i['file_name'])
+            sql = "DELETE FROM {} WHERE {} = '{}'"\
+            .format('pics', 'file_name', i['file_name'])
             cursor.execute(sql)
 
 def main():
