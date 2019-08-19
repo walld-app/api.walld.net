@@ -48,7 +48,7 @@ def sync_add():
                 full_path = config.SEARCH_DIR + category + \
                 '/' + sub_category + '/' + filename
                 sql = "SELECT {} FROM {} WHERE \
-                file_name='{}'".format('file_name','pics', filename)
+                {}='{}'".format('file_name','pics', 'file_name', filename)
                 cursor.execute(sql)
                 ll = cursor.fetchone()
                 if not ll:
