@@ -1,6 +1,7 @@
 import flask
 from random import choice
 import sqlite3
+import config
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -18,15 +19,15 @@ def home():
 
 @app.route('/apiv01/all', methods=['GET'])
 def api_all():
-    conn = sqlite3.connect('pics.db')
+    conn = sqlite3.connect(config.DB_FILE)
     conn.row_factory = dict_factory
     cur = conn.cursor()
-    all_books = cur.execute('SELECT * FROM books;').fetchall()
+    all_books = cur.execute('SELECT * FROM pics;').fetchall()
     return flask.jsonify(all_books)
 
 @app.route('/apiv01/random', methods=['GET'])
 def api_random():
-    conn = sqlite3.connect('pics.db')
+    conn = sqlite3.connect(config.DB)
     conn.row_factory = dict_factory
     cur = conn.cursor()
     all_books = cur.execute('SELECT * FROM pics').fetchall()

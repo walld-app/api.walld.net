@@ -9,18 +9,13 @@
 import os, sqlite3
 from PIL import Image
 
-SEARCH_DIR = '/mnt/ntfs-drive/walld_pics/'
-DB_FILE = SEARCH_DIR + 'pics.db'
-PART_OF_URL = 'https://walld.net/pics/'
-
-
 TABLE_COLUMNS = """CREATE TABLE pics (id text, category text,
 sub_category text, file_name text, width text, \
 height text, ratio text, url text)"""
 
 #checks if base exists, if not, creates one
-if os.path.exists(DB_FILE):
-    conn = sqlite3.connect(DB_FILE)
+if os.path.exists(config.DB_FILE):
+    conn = sqlite3.connect(config.DB_FILE)
     conn.row_factory = sqlite3.Row#stack overflow code, learn it, dumbass
     cursor = conn.cursor()
     try:
@@ -30,7 +25,7 @@ if os.path.exists(DB_FILE):
         cursor.execute(TABLE_COLUMNS)
         conn.commit()
 else:
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(config.DB_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(TABLE_COLUMNS)
@@ -44,13 +39,13 @@ def sync_add():
     #что если сделать из этого функцию и
     #рекурсивно ходить по папкам? типа папки абстракт и искусство будут
     #использованы названия папок в качестве темы - ГОТОВО
-    for category in list_dir(SEARCH_DIR):
+    for category in list_dir(config.SEARCH_DIR):
         print('entering  category:' + category)
-        for sub_category in list_dir(SEARCH_DIR + category):
+        for sub_category in list_dir(config.SEARCH_DIR + category):
             print('-'*30 + '>' + sub_category + '<' + '-'*30)
-            for filename in os.listdir(SEARCH_DIR +
+            for filename in os.listdir(config.SEARCH_DIR +
             category + '/'+ sub_category):
-                full_path = SEARCH_DIR + category + \
+                full_path = config.SEARCH_DIR + category + \
                 '/' + sub_category + '/' + filename
                 sql = "SELECT file_name FROM pics WHERE \
                 file_name='{}'".format(filename)
@@ -61,8 +56,8 @@ def sync_add():
                     with Image.open(full_path) as img:
                         width, height = img.size
                     command = [('id_here', category, sub_category, filename,\
-                    width, height, 'ratio_here', PART_OF_URL + category + \
-                    '/' + sub_category + '/' + filename)]
+                    width, height, 'ratio_here', config.PART_OF_URL + \
+                    category + '/' + sub_category + '/' + filename)]
                     cursor.executemany("INSERT INTO pics \
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)", command)
 
@@ -71,7 +66,7 @@ def sync_del():
     '''This section emplements deleting non existing file.
     if file was deleted for some reason, than we need to update our db'''
     for i in cursor.execute('SELECT * FROM pics'):
-        file_path = SEARCH_DIR + i['category'] + \
+        file_path = config.SEARCH_DIR + i['category'] + \
         '/' + i['sub_category'] + '/' + i['file_name']
         if not os.path.exists(file_path):
             print('deleting', file_path, 'from sql base')
