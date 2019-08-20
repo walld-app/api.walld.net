@@ -65,7 +65,7 @@ def sync_add():
                     with Image.open(full_path) as img:
                         width, height = img.size
                     command = [('1', category, sub_category, filename,\
-                    width, height, 'ratio_here', get_dom_color(full_path), \
+                    width, height, 'ratio_here', 'color_here', \
                     config.PART_OF_URL + \
                     category + '/' + sub_category + '/' + filename)]
                     cursor.executemany("INSERT INTO pics \
