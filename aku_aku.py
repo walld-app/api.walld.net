@@ -8,10 +8,11 @@
 
 import os, sqlite3, config
 from PIL import Image
+import colorgram
 
-TABLE_COLUMNS = """CREATE TABLE pics (id text, category text,
+TABLE_COLUMNS = """CREATE TABLE pics (id int, category text,
 sub_category text, file_name text, width text, \
-height text, ratio text, url text)"""
+height text, ratio text, color text, url text)"""
 
 #checks if base exists, if not, creates one
 if os.path.exists(config.DB_FILE):
@@ -35,10 +36,18 @@ def list_dir(directory):
     subfolders = [f.name for f in os.scandir(directory) if f.is_dir() ]
     return subfolders
 
+def get_dom_color(img, hex=True):
+    '''gets dominant ONE color'''
+    colors = colorgram.extract(img, 1)
+    if hex:
+        print(colors[0].rgb)
+        return '#%02x%02x%02x' % colors[0].rgb
+    else:
+        return colors[0].rgb
+
 def sync_add():
-    #что если сделать из этого функцию и
-    #рекурсивно ходить по папкам? типа папки абстракт и искусство будут
-    #использованы названия папок в качестве темы - ГОТОВО
+    '''recursivly walks on given folder and adds it
+    to db using folder name as category'''
     for category in list_dir(config.SEARCH_DIR):
         print('entering  category:' + category)
         for sub_category in list_dir(config.SEARCH_DIR + category):
@@ -55,15 +64,16 @@ def sync_add():
                     print(filename, 'is new here')
                     with Image.open(full_path) as img:
                         width, height = img.size
-                    command = [('id_here', category, sub_category, filename,\
-                    width, height, 'ratio_here', config.PART_OF_URL + \
+                    command = [('1', category, sub_category, filename,\
+                    width, height, 'ratio_here', get_dom_color(full_path), \
+                    config.PART_OF_URL + \
                     category + '/' + sub_category + '/' + filename)]
                     cursor.executemany("INSERT INTO pics \
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)", command)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", command)
 
 def sync_del():
-    #This section emplements deleting non existing file.
-    #if file was deleted for some reason, than we need to update our db
+    '''This section emplements deleting non existing file.
+    if file was deleted for some reason, than we need to update our db'''
     print('*'*33, 'DELETE','*'*32)
     for i in cursor.execute('SELECT * FROM pics'):
         file_path = config.SEARCH_DIR + i['category'] + \

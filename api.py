@@ -1,10 +1,11 @@
+#!/usr/bin/python3
 import flask
 from random import choice
 import sqlite3
 import config
 
 app = flask.Flask(__name__)
-app.config["DEBUG"] = True
+app.config["DEBUG"] = config.DEBUG
 
 def dict_factory(cursor, row): # need to make success line
     d = {}
@@ -17,13 +18,13 @@ def home():
     return '''<h1>Hi</h1>
 <p>This is a prototype API for sharing wallpapers.</p>'''
 
-@app.route('/apiv01/all', methods=['GET'])
-def api_all():
-    conn = sqlite3.connect(config.DB_FILE)
-    conn.row_factory = dict_factory
-    cur = conn.cursor()
-    all_books = cur.execute('SELECT * FROM pics;').fetchall()
-    return flask.jsonify(all_books)
+#@app.route('/apiv01/all', methods=['GET'])
+#def api_all():
+#    conn = sqlite3.connect(config.DB_FILE)
+#    conn.row_factory = dict_factory
+#    cur = conn.cursor()
+#    all_books = cur.execute('SELECT * FROM pics;').fetchall()
+#    return flask.jsonify(all_books)
 
 @app.route('/apiv01/random', methods=['GET'])
 def api_random():
