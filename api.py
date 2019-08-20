@@ -26,7 +26,7 @@ def home():
 def api_version():
     param = request.args.get('param')
     if param == 'categories':
-        query = "SELECT category FROM pics"
+        query = "SELECT DISTINCT category FROM pics"
         conn = sqlite3.connect(config.DB_FILE)
         conn.row_factory = dict_factory
         cur = conn.cursor()
