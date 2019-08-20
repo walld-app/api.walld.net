@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+#НЕОБХОДИМО НАПИСАТЬ КЛАСС ДЛЯ БАЗЫ ДАННЫХ ЭТО ЖЕСТЬ
 import flask
 from random import choice
 import sqlite3
@@ -20,25 +21,22 @@ def home():
     return '''<h1>Hi</h1>
 <p>This is a prototype API for sharing wallpapers.</p>'''
 
-#@app.route('/apiv01/all', methods=['GET'])
-#def api_all():
-#    conn = sqlite3.connect(config.DB_FILE)
-#    conn.row_factory = dict_factory
-#    cur = conn.cursor()
-#    all_books = cur.execute('SELECT * FROM pics;').fetchall()
-#    return flask.jsonify(all_books)
-
-#@app.route('/apiv01/random', methods=['GET'])
-#def api_random():
-#    conn = sqlite3.connect(config.DB_FILE)
-#    conn.row_factory = dict_factory
-#    cur = conn.cursor()
-#    all_books = cur.execute('SELECT * FROM pics').fetchall()
-#    return flask.jsonify({'success':True, 'content':choice(all_books)})
 
 @app.route('/apiv01/', methods=['GET'])
 def api_version():
-    return flask.jsonify({'success':True, 'content': {'version' : __version__}})
+    param = request.args.get('param')
+    if param == 'categories':
+        query = "SELECT category FROM pics"
+        conn = sqlite3.connect(config.DB_FILE)
+        conn.row_factory = dict_factory
+        cur = conn.cursor()
+        result = cur.execute(query).fetchall()
+        print(result)
+        return flask.jsonify(result)
+    elif param == 'version':
+        return flask.jsonify({'success':True, 'content': {'version' : __version__}})
+    else:
+        page_not_found(404)
 
 @app.route('/apiv01/walls')
 def deliver_walls():
@@ -58,9 +56,6 @@ def deliver_walls():
             print('going to cycle',i)
             query += ' category=? OR'
             to_filter.append(i)
-    #if sub_category:
-    #    query += ' sub_category=? AND'
-    #    to_filter.append(sub_category)
     if not (category or random):
         return page_not_found(404)
     query = query[:-3] + ';'
@@ -68,7 +63,7 @@ def deliver_walls():
     conn.row_factory = dict_factory
     cur = conn.cursor()
     result = cur.execute(query, to_filter).fetchall()
-    return flask.jsonify(choice(result))
+    return flask.jsonify({'success':True, 'content':choice(result)})
 
 @app.errorhandler(404)
 def page_not_found(e):
