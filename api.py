@@ -21,7 +21,6 @@ def home():
     return '''<h1>Hi</h1>
 <p>This is a prototype API for sharing wallpapers.</p>'''
 
-
 @app.route('/apiv01/', methods=['GET'])
 def api_version():
     param = request.args.get('param')
@@ -32,11 +31,23 @@ def api_version():
         cur = conn.cursor()
         result = cur.execute(query).fetchall()
         print(result)
-        return flask.jsonify(result)
+        for i in result:
+            query = "SELECT DISTINCT sub_category\
+             FROM pics WHERE category ='{}'".format(i['category'])
+            aquery = "SELECT COUNT(sub_category) FROM pics WHERE category='{}'".format(i['category'])
+            cur.execute(query)
+            cur.execute(aquery)
+            ll = cur.fetchall()
+            print(ll)
+            i['subs'] = ll
+
+            print('this is i', i)
+
+        return flask.jsonify({'success':True, 'content': result })
     elif param == 'version':
         return flask.jsonify({'success':True, 'content': {'version' : __version__}})
     else:
-        page_not_found(404)
+        return page_not_found(404)
 
 @app.route('/apiv01/walls')
 def deliver_walls():
