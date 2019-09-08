@@ -23,26 +23,23 @@ def home():
 
 @app.route('/apiv01/', methods=['GET'])
 def api_version():
-    param = request.args.get('param')
+    param = request.args.get('param')# listens ?param=
     if param == 'categories':
         query = "SELECT DISTINCT category FROM pics"
         conn = sqlite3.connect(config.DB_FILE)
         conn.row_factory = dict_factory
         cur = conn.cursor()
         result = cur.execute(query).fetchall()
-        print(result)
         for i in result:
             query = "SELECT DISTINCT sub_category\
              FROM pics WHERE category ='{}'".format(i['category'])
-            aquery = "SELECT COUNT(sub_category) FROM pics WHERE category='{}'".format(i['category'])
-            cur.execute(query)
-            cur.execute(aquery)
+            cur.execute(query )
             ll = cur.fetchall()
             print(ll)
-            i['subs'] = ll
-
+            i['subs'] = []
+            for k in ll:
+                i['subs'].append(k['sub_category'])
             print('this is i', i)
-
         return flask.jsonify({'success':True, 'content': result })
     elif param == 'version':
         return flask.jsonify({'success':True, 'content': {'version' : __version__}})
@@ -60,21 +57,32 @@ def deliver_walls():
         conn = sqlite3.connect(config.DB_FILE)
         conn.row_factory = dict_factory
         cur = conn.cursor()
-        all_books = cur.execute('SELECT * FROM pics').fetchall()
-        return flask.jsonify({'success':True, 'content':choice(all_books)})
+        all_walls = cur.execute('SELECT * FROM pics').fetchall()
+        return flask.jsonify({'success':True, 'content':choice(all_walls)})
     if category:
         for i in category:
             print('going to cycle',i)
-            query += ' category=? OR'
+            query += ' category=?'
+            to_filter.append(i)
+    if sub_category:
+        query += ' AND'
+        for i in sub_category:
+            print('some subcategories', i)
+            query += ' sub_category=?'
             to_filter.append(i)
     if not (category or random):
         return page_not_found(404)
-    query = query[:-3] + ';'
+    query += ';'
+    print(query)
+    print(to_filter)
     conn = sqlite3.connect(config.DB_FILE)
     conn.row_factory = dict_factory
     cur = conn.cursor()
     result = cur.execute(query, to_filter).fetchall()
-    return flask.jsonify({'success':True, 'content':choice(result)})
+    if result:
+        return flask.jsonify({'success':True, 'content':choice(result)})
+    else:
+        return page_not_found(404)
 
 @app.errorhandler(404)
 def page_not_found(e):
