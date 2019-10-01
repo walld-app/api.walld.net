@@ -16,9 +16,11 @@ height text, ratio text, color text, url text)"""
 
 #checks if base exists, if not, creates one
 if os.path.exists(config.DB_FILE):
+    os.makedirs(config.SEARCH_DIR)
     conn = sqlite3.connect(config.DB_FILE)
     conn.row_factory = sqlite3.Row#stack overflow code, learn it, dumbass
     cursor = conn.cursor()
+    cursor2 = conn.cursor() #second cursor is needed for deleting stuff
     try:
         cursor.execute('SELECT * FROM pics')
     except sqlite3.OperationalError:
@@ -26,9 +28,11 @@ if os.path.exists(config.DB_FILE):
         cursor.execute(TABLE_COLUMNS)
         conn.commit()
 else:
+    os.makedirs(config.SEARCH_DIR)
     conn = sqlite3.connect(config.DB_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
+    cursor2 = conn.cursor()
     cursor.execute(TABLE_COLUMNS)
     conn.commit()
 
@@ -75,14 +79,15 @@ def sync_del():
     '''This section emplements deleting non existing file.
     if file was deleted for some reason, than we need to update our db'''
     print('*'*33, 'DELETE','*'*32)
-    for i in cursor.execute('SELECT * FROM pics'):
-        file_path = config.SEARCH_DIR + i['category'] + \
-        '/' + i['sub_category'] + '/' + i['file_name']
+
+    for row in cursor.execute('SELECT * FROM pics'): 
+        file_path = config.SEARCH_DIR + row['category'] + \
+        '/' + row['sub_category'] + '/' + row['file_name']
         if not os.path.exists(file_path):
             print('deleting', file_path, 'from sql base')
-            sql = "DELETE FROM {} WHERE {} = '{}'"\
-            .format('pics', 'file_name', i['file_name'])
-            cursor.execute(sql)
+            sql = "DELETE FROM pics WHERE file_name = ?"
+            cursor2.execute(sql, (row['file_name'],))
+            # if we attempt to delete something on cursor then whole row will vanish
 
 def main():
     sync_add()
