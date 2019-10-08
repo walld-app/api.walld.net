@@ -11,6 +11,17 @@ import sqlite3
 from PIL import Image
 import colorgram
 import config
+import argparse
+import multiprocessing
+import time
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', type=int, help='how many to calculate')
+parser.add_argument('-n', type=int, help='how many to calculate without threading')
+args = parser.parse_args()
+
+manager = multiprocessing.Manager()
+color_staff = manager.dict()
 
 TABLE_COLUMNS = """CREATE TABLE pics (id int, category text,
 sub_category text, file_name text, width text, \
@@ -39,17 +50,17 @@ def list_dir(directory):
     subfolders = [f.name for f in os.scandir(directory) if f.is_dir()]
     return subfolders
 
-def get_dom_color(img, hex_type=True):
-    '''gets dominant ONE color'''
-    colors = colorgram.extract(img, 1)
-    if hex_type:
-        print(colors[0].rgb)
-        return '#%02x%02x%02x' % colors[0].rgb
-    return colors[0].rgb
+def get_id():
+    cursor.execute('SELECT MAX(id) FROM pics DESC LIMIT 1')
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+    return -1
 
 def sync_add():
     '''recursivly walks on given folder and adds it
     to db using folder name as category'''
+    idd = get_id()+1
     for category in list_dir(config.SEARCH_DIR):
         print('entering  category:' + category)
 
@@ -69,14 +80,14 @@ def sync_add():
 
                     with Image.open(full_path) as img:
                         width, height = img.size
-
-                    command = [('1', category, sub_category, filename,
-                                width, height, 'ratio_here', 'color_here',
+                    command = [(idd, category, sub_category, filename,
+                                width, height, 'ratio_here', 'no_color',
                                 config.PART_OF_URL + category + '/' + \
                                 sub_category + '/' + filename)]
                     cursor.executemany("INSERT INTO pics \
                                         VALUES (?, ?, ?, ?, \
                                         ?, ?, ?, ?, ?)", command)
+                    idd += 1
 
 def sync_del():
     '''This section emplements deleting non existing file.
@@ -90,13 +101,53 @@ def sync_del():
             print('deleting', file_path, 'from sql base')
             sql = "DELETE FROM pics WHERE file_name = ?"
             cursor2.execute(sql, (row['file_name'],))
-            # if we attempt to delete something on cursor then whole row will vanish
+            # if we attempt to delete something on cursor 
+            # then whole row will vanish
+
+def get_dom_color(img, hex_type=True):
+    '''gets dominant ONE color'''
+    colors = colorgram.extract(img, 1)
+    if hex_type:
+        return '#%02x%02x%02x' % colors[0].rgb
+    return colors[0].rgb
+
+def calc_colors(row):
+    print('calcing ' + row['file_name'])
+    file_path = config.SEARCH_DIR + row['category'] + \
+    '/' + row['sub_category'] + '/' + row['file_name']
+    color = get_dom_color(file_path)
+    color_staff[str(row['id'])] = color # need to send it to global variable
+    print('done on ' + row['file_name'])
+    print(color_staff) # Нужно напечатать это после того как все закончилось
+    
 
 def main():
     '''main boy'''
     sync_add()
     sync_del()
     CONN.commit()
+    cursor.execute('SELECT * FROM pics WHERE color = "no_color"')
+    if args.c:
+        procs = []
+        for _ in range(args.c):
+            thread = multiprocessing.Process(target=calc_colors, args=(cursor.fetchone(),))
+            procs.append(thread)
+            thread.start()
+        alive = True
+        while alive:
+            get = []
+            for i in procs:
+                get.append(i.is_alive())
+            if not any(get):
+                alive = False
+            time.sleep(1)
+    print('done')
+    if args.n:
+        for _ in range(args.n):
+            calc_colors(cursor.fetchone())
+    sql = 'UPDATE pics SET color = ? WHERE color = "no_color" AND id = ?'
+    for key in color_staff:
+        cursor.execute(sql, (color_staff[key], key))
+    CONN.commit()
     CONN.close()
-
 main()
