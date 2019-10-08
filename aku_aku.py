@@ -53,7 +53,7 @@ def list_dir(directory):
 def get_id():
     cursor.execute('SELECT MAX(id) FROM pics DESC LIMIT 1')
     row = cursor.fetchone()
-    if row:
+    if row[0]:
         return row[0]
     return -1
 
