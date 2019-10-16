@@ -9,6 +9,7 @@ other stuff, kindly and jently.'''
 import os
 import sqlite3
 import psycopg2
+import postgres
 import psycopg2.extras
 import multiprocessing
 from time import sleep
@@ -47,6 +48,11 @@ elif config.DB == 'sqlite3':
     cursor = CONN.cursor()
     cursor2 = CONN.cursor() #second cursor is needed for deleting stuff
     SQL = '?'
+
+else:
+    print('db is not recognized, use sqlite3 or postgres')
+    exit(1)
+    
 try:
     cursor.execute('SELECT * FROM pics')
 except (sqlite3.OperationalError, psycopg2.errors.UndefinedTable):
@@ -110,15 +116,17 @@ def sync_del():
     '''This section emplements deleting non existing file.
     if file was deleted for some reason, than we need to update our db'''
     print('*'*33, 'DELETE', '*'*32)
-
-    for row in cursor.execute('SELECT * FROM pics'):
-        file_path = config.SEARCH_DIR + row['category'] + \
-        '/' + row['sub_category'] + '/' + row['file_name']
+    try:
+        for row in cursor.execute('SELECT * FROM pics'):
+            file_path = config.SEARCH_DIR + row['category'] + \
+            '/' + row['sub_category'] + '/' + row['file_name']
         
-        if not os.path.exists(file_path):
-            print('deleting', file_path, 'from sql base')
-            sql = "DELETE FROM pics WHERE file_name = {}".format(SQL)
-            cursor2.execute(sql, (row['file_name'],))
+            if not os.path.exists(file_path):
+                print('deleting', file_path, 'from sql base')
+                sql = "DELETE FROM pics WHERE file_name = {}".format(SQL)
+                cursor2.execute(sql, (row['file_name'],))
+    except TypeError:
+        print('nothing to delete')
             # if we attempt to delete something on cursor
             # then whole row will vanish
 
@@ -144,8 +152,8 @@ def main():
     sync_add()
     sync_del()
     CONN.commit()
-    cursor.execute('SELECT * FROM pics WHERE color = "no_color"')
-    sql = 'UPDATE pics SET color = ? WHERE color = "no_color" AND id = ?'
+    cursor.execute("SELECT * FROM pics WHERE color = 'no_color'")
+    sql = "UPDATE pics SET color = {0} WHERE color = 'no_color' AND id = {0}".format(SQL)
 
     if ARGS.c:
         procs = []
