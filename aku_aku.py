@@ -115,6 +115,8 @@ def get_dom_color(img, hex_type=True):
 
 def calc_colors(row):
     '''gives get_dom_color function args and writes output to dict'''
+    if not row:
+        return False
     file_path = config.SEARCH_DIR + row['category'] + \
     '/' + row['sub_category'] + '/' + row['file_name']
     color = get_dom_color(file_path)
@@ -143,7 +145,10 @@ def main():
                 get.append(i.is_alive())
             if not any(get):
                 alive = False
-                print(color_staff)
+                if color_staff:
+                    print(color_staff)
+                else:
+                    print('nothing to calc!')
             sleep(1)
 
     elif ARGS.n:
