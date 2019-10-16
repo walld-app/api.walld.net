@@ -8,20 +8,20 @@ other stuff, kindly and jently.'''
 
 import os
 import sqlite3
-from PIL import Image
-import colorgram
-import config
-import argparse
 import multiprocessing
-import time
+from time import sleep
+import argparse
+import colorgram
+from PIL import Image
+import config
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', type=int, help='how many to calculate')
-parser.add_argument('-n', type=int, help='how many to calculate without threading')
-args = parser.parse_args()
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('-c', type=int, help='how many to calculate')
+PARSER.add_argument('-n', type=int, help='how many to calculate without threading')
+ARGS = PARSER.parse_args()
 
-manager = multiprocessing.Manager()
-color_staff = manager.dict()
+MANAGER = multiprocessing.Manager()
+color_staff = MANAGER.dict()
 
 TABLE_COLUMNS = """CREATE TABLE pics (id int, category text,
 sub_category text, file_name text, width text, \
@@ -51,6 +51,7 @@ def list_dir(directory):
     return subfolders
 
 def get_id():
+    '''gets id based on existing maximun, returns -1 if didn`t find anything'''
     cursor.execute('SELECT MAX(id) FROM pics DESC LIMIT 1')
     row = cursor.fetchone()
     if row[0]:
@@ -97,11 +98,12 @@ def sync_del():
     for row in cursor.execute('SELECT * FROM pics'):
         file_path = config.SEARCH_DIR + row['category'] + \
         '/' + row['sub_category'] + '/' + row['file_name']
+        
         if not os.path.exists(file_path):
             print('deleting', file_path, 'from sql base')
             sql = "DELETE FROM pics WHERE file_name = ?"
             cursor2.execute(sql, (row['file_name'],))
-            # if we attempt to delete something on cursor 
+            # if we attempt to delete something on cursor
             # then whole row will vanish
 
 def get_dom_color(img, hex_type=True):
@@ -112,13 +114,11 @@ def get_dom_color(img, hex_type=True):
     return colors[0].rgb
 
 def calc_colors(row):
-    print('calcing ' + row['file_name'])
+    '''gives get_dom_color function args and writes output to dict'''
     file_path = config.SEARCH_DIR + row['category'] + \
     '/' + row['sub_category'] + '/' + row['file_name']
     color = get_dom_color(file_path)
-    color_staff[str(row['id'])] = color # need to send it to global variable
-    print('done on ' + row['file_name'])
-    print(color_staff) # Нужно напечатать это после того как все закончилось
+    color_staff[str(row['id'])] = color
     
 
 def main():
@@ -127,27 +127,32 @@ def main():
     sync_del()
     CONN.commit()
     cursor.execute('SELECT * FROM pics WHERE color = "no_color"')
-    if args.c:
+    sql = 'UPDATE pics SET color = ? WHERE color = "no_color" AND id = ?'
+
+    if ARGS.c:
         procs = []
-        for _ in range(args.c):
-            thread = multiprocessing.Process(target=calc_colors, args=(cursor.fetchone(),))
+        alive = True
+        for _ in range(ARGS.c):
+            thread = multiprocessing.Process(target=calc_colors,
+                                             args=(cursor.fetchone(),))
             procs.append(thread)
             thread.start()
-        alive = True
         while alive:
             get = []
             for i in procs:
                 get.append(i.is_alive())
             if not any(get):
                 alive = False
-            time.sleep(1)
-    print('done')
-    if args.n:
-        for _ in range(args.n):
+                print(color_staff)
+            sleep(1)
+
+    elif ARGS.n:
+        for _ in range(ARGS.n):
             calc_colors(cursor.fetchone())
-    sql = 'UPDATE pics SET color = ? WHERE color = "no_color" AND id = ?'
+
     for key in color_staff:
         cursor.execute(sql, (color_staff[key], key))
+
     CONN.commit()
     CONN.close()
 main()
