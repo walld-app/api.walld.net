@@ -8,6 +8,8 @@ other stuff, kindly and jently.'''
 
 import os
 import sqlite3
+import psycopg2
+import psycopg2.extras
 import multiprocessing
 from time import sleep
 import argparse
@@ -32,16 +34,25 @@ try:
     os.makedirs(config.SEARCH_DIR)
 except FileExistsError:
     pass
-
-CONN = sqlite3.connect(config.DB_FILE)
-CONN.row_factory = sqlite3.Row#stack overflow code, learn it, dumbass
-cursor = CONN.cursor()
-cursor2 = CONN.cursor() #second cursor is needed for deleting stuff
-
+if config.DB == 'postgres':
+    CONN = psycopg2.connect(dbname=config.DB_NAME, user=config.DB_USER_NAME, 
+                        password=config.DB_PASSWORD, host=config.DB_HOST,
+                        port = '5159', cursor_factory=psycopg2.extras.DictCursor)
+    cursor = CONN.cursor()
+    cursor2 = CONN.cursor()
+    SQL = '%s'
+elif config.DB == 'sqlite3':
+    CONN = sqlite3.connect(config.DB_FILE)
+    CONN.row_factory = sqlite3.Row#stack overflow code, learn it, dumbass
+    cursor = CONN.cursor()
+    cursor2 = CONN.cursor() #second cursor is needed for deleting stuff
+    SQL = '?'
 try:
     cursor.execute('SELECT * FROM pics')
-except sqlite3.OperationalError:
+except (sqlite3.OperationalError, psycopg2.errors.UndefinedTable):
     print('hmm')
+    if config.DB == 'postgres':
+        CONN.rollback()
     cursor.execute(TABLE_COLUMNS)
     CONN.commit()
 
@@ -52,7 +63,11 @@ def list_dir(directory):
 
 def get_id():
     '''gets id based on existing maximun, returns -1 if didn`t find anything'''
-    cursor.execute('SELECT MAX(id) FROM pics DESC LIMIT 1')
+    try:
+        cursor.execute('SELECT MAX(id) FROM pics DESC LIMIT 1')
+    except psycopg2.errors.SyntaxError:
+        CONN.rollback()
+        return -1
     row = cursor.fetchone()
     if row[0]:
         return row[0]
@@ -73,7 +88,7 @@ def sync_add():
                                        sub_category):
                 full_path = config.SEARCH_DIR + category + \
                             '/' + sub_category + '/' + filename
-                sql = "SELECT file_name FROM pics WHERE file_name=?"
+                sql = "SELECT file_name FROM pics WHERE file_name={}".format(SQL)
                 cursor.execute(sql, (filename,))
                 found_row = cursor.fetchone()
                 if not found_row:
@@ -86,8 +101,9 @@ def sync_add():
                                 config.PART_OF_URL + category + '/' + \
                                 sub_category + '/' + filename)]
                     cursor.executemany("INSERT INTO pics \
-                                        VALUES (?, ?, ?, ?, \
-                                        ?, ?, ?, ?, ?)", command)
+                                        VALUES ({0}, {0}, {0}, {0}, \
+                                        {0}, {0}, {0}, {0}, {0})".format(SQL)
+                                        , command)
                     idd += 1
 
 def sync_del():
@@ -101,7 +117,7 @@ def sync_del():
         
         if not os.path.exists(file_path):
             print('deleting', file_path, 'from sql base')
-            sql = "DELETE FROM pics WHERE file_name = ?"
+            sql = "DELETE FROM pics WHERE file_name = {}".format(SQL)
             cursor2.execute(sql, (row['file_name'],))
             # if we attempt to delete something on cursor
             # then whole row will vanish
