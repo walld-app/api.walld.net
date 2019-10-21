@@ -9,12 +9,12 @@ other stuff, kindly and jently.'''
 import os
 import sqlite3
 import psycopg2
-import postgres
 import psycopg2.extras
 import multiprocessing
 from time import sleep
 import argparse
 import colorgram
+import requests
 from PIL import Image
 import config
 
@@ -28,7 +28,7 @@ color_staff = MANAGER.dict()
 
 TABLE_COLUMNS = """CREATE TABLE pics (id int, category text,
 sub_category text, file_name text, width text, \
-height text, ratio text, color text, url text)"""
+height text, ratio text, color text, url text, locked int)""" #add locked state
 
 #checks if base exists, if not, creates one
 try:
@@ -105,10 +105,10 @@ def sync_add():
                     command = [(idd, category, sub_category, filename,
                                 width, height, 'ratio_here', 'no_color',
                                 config.PART_OF_URL + category + '/' + \
-                                sub_category + '/' + filename)]
+                                sub_category + '/' + filename, '0')]
                     cursor.executemany("INSERT INTO pics \
                                         VALUES ({0}, {0}, {0}, {0}, \
-                                        {0}, {0}, {0}, {0}, {0})".format(SQL)
+                                        {0}, {0}, {0}, {0}, {0}, {0})".format(SQL)
                                         , command)
                     idd += 1
 
@@ -130,39 +130,46 @@ def sync_del():
             # if we attempt to delete something on cursor
             # then whole row will vanish
 
-def get_dom_color(img, hex_type=True):
-    '''gets dominant ONE color'''
+def get_dom_color(img, hex_type=True):# maybe we need some rewrite to return tuple of em?
+    '''gets dominant color'''
     colors = colorgram.extract(img, 1)
-    if hex_type:
-        return '#%02x%02x%02x' % colors[0].rgb
+    print(colors)
+    if hex_type : return '#%02x%02x%02x' % colors[0].rgb
     return colors[0].rgb
 
-def calc_colors(row):
+def calc_colors(row): 
     '''gives get_dom_color function args and writes output to dict'''
-    if not row:
-        return False
-    file_path = config.SEARCH_DIR + row['category'] + \
-    '/' + row['sub_category'] + '/' + row['file_name']
+    r = requests.get(row['url'])
+    print(r.status_code)
+    file_path = config.TEMP_FOLDER + row['file_name']
+    open(file_path, 'wb').write(r.content)
     color = get_dom_color(file_path)
     color_staff[str(row['id'])] = color
-    
+    os.remove(file_path)
+
 
 def main():
     '''main boy'''
+    procs = []
+    alive = True
+    ids = []
     sync_add()
     sync_del()
     CONN.commit()
-    cursor.execute("SELECT * FROM pics WHERE color = 'no_color'")
-    sql = "UPDATE pics SET color = {0} WHERE color = 'no_color' AND id = {0}".format(SQL)
+    cursor.execute("SELECT * FROM pics WHERE color = 'no_color' AND locked = '0'")
+    sql = "UPDATE pics SET color = {0} WHERE id = {0}".format(SQL) #add LOCKED state
 
     if ARGS.c:
-        procs = []
-        alive = True
         for _ in range(ARGS.c):
-            thread = multiprocessing.Process(target=calc_colors,
-                                             args=(cursor.fetchone(),))
-            procs.append(thread)
-            thread.start()
+            row = cursor.fetchone()
+            if row:
+                cursor2.execute("UPDATE pics SET locked = '1' WHERE id = '{}'".format(row['id']))
+                CONN.commit()
+                ids.append(row['id'])
+                thread = multiprocessing.Process(target=calc_colors,
+                                             args=(row,))
+                procs.append(thread)
+                thread.start()
         while alive:
             get = []
             for i in procs:
@@ -177,8 +184,14 @@ def main():
 
     elif ARGS.n:
         for _ in range(ARGS.n):
-            calc_colors(cursor.fetchone())
+            row = cursor.fetchone()
+            cursor.execute("UPDATE pics SET locked = '1' WHERE id = '{}'".format(row['id']))
+            CONN.commit()
+            calc_colors(row)
+            ids.append(row['id'])
 
+    for i in ids:
+        cursor.execute("UPDATE pics SET locked = '0' WHERE id = '{}'".format(i))
     for key in color_staff:
         cursor.execute(sql, (color_staff[key], key))
 

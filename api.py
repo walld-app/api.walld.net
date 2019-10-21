@@ -3,18 +3,14 @@
 import flask
 from random import choice
 import sqlite3
+import sql_worker
 import config
 from flask import request
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = config.DEBUG
-__version__ = '01'
-
-def dict_factory(cursor, row): # need to make success line
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
+__version__ = '02'
+sql_boy = sql_worker.Sql_boy(db_type = config.DB)
 
 @app.route('/', methods=['GET'])
 def home():
@@ -24,25 +20,28 @@ def home():
 @app.route('/apiv01/', methods=['GET'])
 def api_version():
     param = request.args.get('param')# listens ?param=
+
     if param == 'categories':
         query = "SELECT DISTINCT category FROM pics"
-        conn = sqlite3.connect(config.DB_FILE)
-        conn.row_factory = dict_factory
-        cur = conn.cursor()
-        result = cur.execute(query).fetchall()
-        for i in result:
+        result = sql_boy.execute(query, fetch = 'all')
+        print(result, 'this is result')
+
+        for category in result:
+            print(category, 'this is category') # НИЧЕ НЕ ПОНЯТНО АЛЛОУ
             query = "SELECT DISTINCT sub_category\
-             FROM pics WHERE category ='{}'".format(i['category'])
-            cur.execute(query )
-            ll = cur.fetchall()
-            print(ll)
-            i['subs'] = []
+             FROM pics WHERE category ='{}'".format(category['category'])
+            ll = sql_boy.execute(query, fetch = 'all')
+            print(ll[0], 'this is ll')
+            category['subs'] = [] # refactor
             for k in ll:
+
                 i['subs'].append(k['sub_category'])
             print('this is i', i)
         return flask.jsonify({'success':True, 'content': result })
+
     elif param == 'version':
         return flask.jsonify({'success':True, 'content': {'version' : __version__}})
+
     else:
         return page_not_found(404)
 
@@ -54,31 +53,25 @@ def deliver_walls():
     query = "SELECT * FROM pics WHERE"
     to_filter = []
     if random:
-        conn = sqlite3.connect(config.DB_FILE)
-        conn.row_factory = dict_factory
-        cur = conn.cursor()
-        all_walls = cur.execute('SELECT * FROM pics').fetchall()
+        all_walls = sql_boy.execute('SELECT * FROM pics', fetch = 'all')
         return flask.jsonify({'success':True, 'content':choice(all_walls)})
     if category:
         for i in category:
             print('going to cycle',i)
-            query += ' category=?'
+            query += ' category={}'. format(sql_boy.SQL)
             to_filter.append(i)
     if sub_category:
         query += ' AND'
         for i in sub_category:
             print('some subcategories', i)
-            query += ' sub_category=?'
+            query += ' sub_category={}'.format(sql_boy.SQL)
             to_filter.append(i)
     if not (category or random):
         return page_not_found(404)
     query += ';'
     print(query)
     print(to_filter)
-    conn = sqlite3.connect(config.DB_FILE)
-    conn.row_factory = dict_factory
-    cur = conn.cursor()
-    result = cur.execute(query, to_filter).fetchall()
+    result = sql_boy.execute(query, args=to_filter, fetch='all')
     if result:
         return flask.jsonify({'success':True, 'content':choice(result)})
     else:
