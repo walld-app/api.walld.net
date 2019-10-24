@@ -71,7 +71,7 @@ def get_id():
     '''gets id based on existing maximun, returns -1 if didn`t find anything'''
     try:
         cursor.execute('SELECT MAX(id) FROM pics DESC LIMIT 1')
-    except psycopg2.errors.SyntaxError:
+    except psycopg2.ProgrammingError:
         CONN.rollback()
         return -1
     row = cursor.fetchone()
