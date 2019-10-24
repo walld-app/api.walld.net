@@ -24,19 +24,13 @@ def api_version():
     if param == 'categories':
         query = "SELECT DISTINCT category FROM pics"
         result = sql_boy.execute(query, fetch = 'all')
-        print(result, 'this is result')
-
         for category in result:
-            print(category, 'this is category') # НИЧЕ НЕ ПОНЯТНО АЛЛОУ
             query = "SELECT DISTINCT sub_category\
              FROM pics WHERE category ='{}'".format(category['category'])
-            ll = sql_boy.execute(query, fetch = 'all')
-            print(ll[0], 'this is ll')
+            sub_categories = sql_boy.execute(query, fetch = 'all')
             category['subs'] = [] # refactor
-            for k in ll:
-
-                i['subs'].append(k['sub_category'])
-            print('this is i', i)
+            for sub_category in sub_categories:
+                category['subs'].append(sub_category['sub_category'])
         return flask.jsonify({'success':True, 'content': result })
 
     elif param == 'version':
