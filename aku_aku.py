@@ -55,7 +55,7 @@ else:
     
 try:
     cursor.execute('SELECT * FROM pics')
-except (sqlite3.OperationalError, psycopg2.errors.UndefinedTable):
+except (sqlite3.OperationalError, psycopg2.ProgrammingError):
     print('hmm')
     if config.DB == 'postgres':
         CONN.rollback()
@@ -140,9 +140,11 @@ def get_dom_color(img, hex_type=True):# maybe we need some rewrite to return tup
 def calc_colors(row): 
     '''gives get_dom_color function args and writes output to dict'''
     r = requests.get(row['url'])
-    print(r.status_code)
     file_path = config.TEMP_FOLDER + row['file_name']
-    open(file_path, 'wb').write(r.content)
+    if r.status_code == 200:
+        open(file_path, 'wb').write(r.content)
+    else:
+        print('some kind of error, need to check', row)
     color = get_dom_color(file_path)
     color_staff[str(row['id'])] = color
     os.remove(file_path)

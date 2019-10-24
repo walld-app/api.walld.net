@@ -76,3 +76,4 @@ def page_not_found(e):
     return flask.jsonify({'error':'404', 'success':False}), 404
 
 app.run()
+sql_boy.close_connection()()

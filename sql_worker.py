@@ -33,7 +33,7 @@ class Sql_boy():
 
     def execute(self, line, args = (), fetch='all'):
         line += ';'
-        if self.db_type == 'postgres':
+        if self.db_type == 'postgres': #kind of spaghetti code
             dd = {}
             self.cursor.execute(line)
         elif self.db_type == 'sqlite3':
@@ -58,4 +58,5 @@ class Sql_boy():
                     dd[i] = ll[i]
                 return dd
             return result.fetchone()
-         
+    def close_connection(self):
+        self.CONN.close()
