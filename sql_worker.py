@@ -31,11 +31,11 @@ class Sql_boy():
             exit(1)
     
 
-    def execute(self, line, args = (), fetch='all'):
+    def execute(self, line, args = None, fetch='all'):
         line += ';'
         if self.db_type == 'postgres': #kind of spaghetti code
             dd = {}
-            self.cursor.execute(line)
+            self.cursor.execute(line, args)
         elif self.db_type == 'sqlite3':
             result = self.cursor.execute(line)
 
@@ -58,5 +58,9 @@ class Sql_boy():
                     dd[i] = ll[i]
                 return dd
             return result.fetchone()
+
+    def gen_line(self, line):
+        return line.format(self.SQL)
+
     def close_connection(self):
         self.CONN.close()
