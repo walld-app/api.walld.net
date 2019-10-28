@@ -9,7 +9,7 @@ import config
 app = flask.Flask(__name__)
 app.config["DEBUG"] = config.DEBUG
 __version__ = '02'
-sql_boy = sql_worker.Sql_boy(db_type=config.DB)
+sql_boy = sql_worker.SqlBoy(db_type=config.DB)
 
 @app.route('/', methods=['GET'])
 def home():
@@ -74,4 +74,4 @@ def page_not_found(error_code):
     return flask.jsonify({'error':'404', 'success':False}), 404
 
 app.run()
-sql_boy.close_connection()()
+sql_boy.close_connection()

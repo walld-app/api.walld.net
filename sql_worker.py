@@ -1,87 +1,88 @@
-import config
+'''postgresql and sqlite3 lib for DRY code'''
+import sqlite3
+import sys
 import psycopg2
 import psycopg2.extras
-import sqlite3
+import config
 
-#ПИЗДЕЦ НУЖНО ПИСАТЬ ЕБАНЫЙ ДИКФАКТОРИ
-
-class Sql_boy():
-    def __init__(self, db_type = None):
+class SqlBoy():
+    '''class represents connection for postgre and(in future) sqlite3'''
+    def __init__(self, db_type=None):
         self.db_type = db_type
-        self.TABLE_COLUMNS = """CREATE TABLE pics (id int, category text, \
+        self.table_columns = """CREATE TABLE pics (id int, category text, \
                             sub_category text, file_name text, width text, \
-                            height text, ratio text, color text, url text, locked int)"""   
+                            height text, ratio text, color text, url text, locked int)"""
         if self.db_type == 'postgres':
-            self.CONN = psycopg2.connect(
-                dbname=config.DB_NAME, user=config.DB_USER_NAME, 
+            self.conn = psycopg2.connect(
+                dbname=config.DB_NAME, user=config.DB_USER_NAME,
                 password=config.DB_PASSWORD, host=config.DB_HOST,
-                port = config.DB_PORT, cursor_factory=psycopg2.extras.RealDictCursor
+                port=config.DB_PORT, cursor_factory=psycopg2.extras.RealDictCursor
             )
-            self.cursor = self.CONN.cursor()
-            self.cursor2 = self.CONN.cursor()
-            self.SQL = '%s'
+            self.cursor = self.conn.cursor()
+            self.cursor2 = self.conn.cursor()
+            self.sql = '%s'
 
         elif self.db_type == 'sqlite3':
-            self.CONN = sqlite3.connect(config.DB_FILE, check_same_thread=False)
-            self.CONN.row_factory = sqlite3.Row#stack overflow code, learn it, dumbass
-            self.cursor = self.CONN.cursor()
-            self.cursor2 = self.CONN.cursor()
-            self.SQL = '?'
+            self.conn = sqlite3.connect(config.DB_FILE, check_same_thread=False)
+            self.conn.row_factory = sqlite3.Row#stack overflow code, learn it, dumbass
+            self.cursor = self.conn.cursor()
+            self.cursor2 = self.conn.cursor()
+            self.sql = '?'
 
         elif not self.db_type:
             print('you didn`t specify db name in config!')
-            exit(1)
+            sys.exit(1)
 
         try:
             self.cursor.execute('SELECT * FROM pics')
         except (sqlite3.OperationalError, psycopg2.ProgrammingError):
             if self.db_type == 'postgres':
-                self.CONN.rollback()
-            self.cursor.execute(self.TABLE_COLUMNS)
-            self.CONN.commit()
+                self.conn.rollback()
+            self.cursor.execute(self.table_columns)
+            self.conn.commit()
 
-    def execute(self, line, args = None, fetch='all'):
+    def execute(self, line, args=None, fetch='all'):
+        '''executes line with or without args'''
         line += ';'
-        if self.db_type == 'postgres': #kind of spaghetti code
-            dd = {}
-            try:
-                self.cursor.execute(line, args)
-            except psycopg2.ProgrammingError:
-                self.CONN.rollback()
-                return False
-        elif self.db_type == 'sqlite3':
-            result = self.cursor.execute(line)
-
+        row_dicts = {}
+        try:
+            self.cursor.execute(line, args)
+        except psycopg2.ProgrammingError:
+            self.conn.rollback()
+            return row_dicts
+        result = self.cursor.execute(line, args)
         if fetch == 'all':
             if self.db_type == 'postgres':
                 list_of_dicts = []
                 try:
                     fetchall = self.cursor.fetchall()
                 except psycopg2.ProgrammingError:
-                    return {}
-                for row in fetchall:                #NEED NEW FUNCTION AND
-                    for content in row:             #POSSIBLY CONTRIBUTE THIS 
-                        dd[content] = row[content]  #TO PSYCOPG2, AWFUL
-                    list_of_dicts.append(dd)
-                    dd = {}
+                    return row_dicts
+                for row in fetchall:#NEED NEW FUNCTION AND
+                    for content in row:#POSSIBLY CONTRIBUTE THIS
+                        row_dicts[content] = row[content]#TO PSYCOPG2, AWFUL
+                    list_of_dicts.append(row_dicts)
+                    row_dicts = {}
                 return list_of_dicts
-            return result.fetchall()
 
         elif fetch == 'one':
             if self.db_type == 'postgres':
-                ll = self.cursor.fetchone()
-                if not ll:
-                    return dd
-                for i in ll:
-                    dd[i] = ll[i]
-                return dd
+                list_of_lines = self.cursor.fetchone()
+                if not list_of_lines:
+                    return row_dicts
+                for i in list_of_lines:
+                    row_dicts[i] = list_of_lines[i]
+                return row_dicts
             return result.fetchone()
 
     def gen_line(self, line):
-        return line.format(self.SQL)
+        '''gens line based on sql format'''
+        return line.format(self.sql)
 
     def commit(self):
-        self.CONN.commit()
+        '''commits changes'''
+        self.conn.commit()
 
     def close_connection(self):
-        self.CONN.close()
+        '''closes connection'''
+        self.conn.close()

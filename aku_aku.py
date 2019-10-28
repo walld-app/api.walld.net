@@ -29,7 +29,7 @@ try:
 except FileExistsError:
     pass
 
-sql_boy = sql_worker.Sql_boy(db_type=config.DB)
+sql_boy = sql_worker.SqlBoy(db_type=config.DB)
 
 def list_dir(directory):
     '''returns generated list with folders'''
@@ -69,9 +69,9 @@ def sync_add():
                     with Image.open(full_path) as img:
                         width, height = img.size
                     command = (idd, category, sub_category, filename,
-                                width, height, 'ratio_here', 'no_color',
-                                config.PART_OF_URL + category + '/' + \
-                                sub_category + '/' + filename.replace(' ', '_'), '0')
+                               width, height, 'ratio_here', 'no_color',
+                               config.PART_OF_URL + category + '/' + \
+                               sub_category + '/' + filename.replace(' ', '_'), '0')
                     line = sql_boy.gen_line("INSERT INTO pics VALUES ({0}, {0}, {0},\
                                              {0}, {0}, {0}, {0}, {0}, {0}, {0})")
                     sql_boy.execute(line, command)
@@ -87,7 +87,6 @@ def sync_del():
         for row in list_of_boys:
             file_path = config.SEARCH_DIR + row['category'] + \
             '/' + row['sub_category'] + '/' + row['file_name']
-        
             if not os.path.exists(file_path):
                 print('deleting', file_path, 'from sql base')
                 sql = sql_boy.gen_line("DELETE FROM pics WHERE file_name = {0}")
@@ -101,21 +100,21 @@ def get_dom_color(img, hex_type=True):# maybe we need some rewrite to return tup
     '''gets dominant color'''
     colors = colorgram.extract(img, 1)
     print(colors)
-    if hex_type : return '#%02x%02x%02x' % colors[0].rgb
+    if hex_type:
+        return '#%02x%02x%02x' % colors[0].rgb
     return colors[0].rgb
 
-def calc_colors(row): 
+def calc_colors(row):
     '''gives get_dom_color function args and writes output to dict'''
-    r = requests.get(row['url'])
+    request = requests.get(row['url'])
     file_path = config.TEMP_FOLDER + row['file_name']
-    if r.status_code == 200:
-        open(file_path, 'wb').write(r.content)
+    if request.status_code == 200:
+        open(file_path, 'wb').write(request.content)
+        color = get_dom_color(file_path)
+        color_staff[str(row['id'])] = color
+        os.remove(file_path)
     else:
         print('some kind of error, need to check', row)
-    color = get_dom_color(file_path)
-    color_staff[str(row['id'])] = color
-    os.remove(file_path)
-
 
 def main():
     '''main boy'''
@@ -125,17 +124,19 @@ def main():
     sync_add()
     sync_del()
     sql_boy.commit()
-    row_list = sql_boy.execute("SELECT * FROM pics WHERE color = 'no_color' AND locked = '0'", fetch='all')
+    row_list = sql_boy.execute("SELECT * FROM pics WHERE color = 'no_color'\
+                                AND locked = '0'", fetch='all')
     sql = sql_boy.gen_line("UPDATE pics SET color = {0} WHERE id = {0}")
 
     if ARGS.c:
         for _ in range(ARGS.c):
             row = row_list.pop(0)
             if row:
-                sql_boy.execute(sql_boy.gen_line("UPDATE pics SET locked = '1' WHERE id = {0}"), (row['id'], ))
+                sql_boy.execute(sql_boy.gen_line("UPDATE pics SET locked = '1'\
+                                                  WHERE id = {0}"), (row['id'], ))
                 ids.append(row['id'])
                 thread = multiprocessing.Process(target=calc_colors,
-                                             args=(row,))
+                                                 args=(row,))
                 procs.append(thread)
                 thread.start()
         print('aha')
