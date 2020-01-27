@@ -1,7 +1,10 @@
-from pydentic import BaseModel 
+'''dto classes for api'''
+from pydantic import BaseModel
+from pydantic import Optional
+
 
 class Wall(BaseModel):
-    wall_id: int
+    '''represents wall from api point of view in dto for filtering purposes'''
     width: int
     height: int
     color: Optional[str]
@@ -9,4 +12,3 @@ class Wall(BaseModel):
     sub_category: str
     file_name: str
     ratio: Optional[str]
-    
