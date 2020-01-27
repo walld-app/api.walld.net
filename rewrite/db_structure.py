@@ -6,19 +6,27 @@ from sqlalchemy import Column, Integer, String, Boolean
 BASE = declarative_base()
 
 
-class walld_pics(BASE):
+class BaseTable(BASE):
+    '''abstract model for all tables.'''
+    __abstract__ = True
+    id = Column(Integer, primary_key=True)
+    rating = Column(Integer)
+
+class WalldPics(BaseTable):
     '''represents wall from db point of view'''
-    walld_id = Column(Integer, primary_key=True)
+    __tablename__ = 'walls'
     width = Column(Integer)
     height = Column(Integer)
+    ratio = Column(String)
     color = Column(String)
     category = Column(String)
     sub_category = Column(String)
     file_name = Column(String)
-    ratio = Column(String)
     locked = Column(Boolean)
 
 
-class walld_user(BASE):
+class WalldUser(BaseTable):
     '''represents user from db point of view'''
-    user_id = Column(Integer, primary_key=True)
+    __tablename__ = 'users'
+    uploads = Column(Integer)
+

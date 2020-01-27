@@ -65,7 +65,7 @@ def deliver_walls():
     print(query, '< query')
     result = sql_boy.execute(query, args=to_filter, fetch='all')
     if result:
-        return flask.jsonify({'success':True, 'content':choice(result)})
+        return flask.jsonify({'success':True, 'content':choice(result)}) #nosec
     return page_not_found(404)
 
 @app.errorhandler(404)
