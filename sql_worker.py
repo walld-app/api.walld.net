@@ -15,5 +15,5 @@ def get_distinct(target):
         session = SESSION()
         distincts = [i[0] for i in session.query(target).distinct()] #КОСТЫЛЬ ПЕРЕДЕЛАТЬ
         return distincts
-    except :# докинуть ошибку
+    except:# докинуть ошибку
         print('error')
