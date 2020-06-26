@@ -1,9 +1,13 @@
-'''helpers module provides some functions'''
+from walld_db.helpers import DB
+from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 
-from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 
-def get_connection_dsn():
-    return f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+db = DB(DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME)
 
-def ll(sda0) -> int:
-    pass
+
+def get_cats_sub_cats() -> dict:
+    d = {}
+    cats = db.categories_objects
+    for i in cats:
+        d[i.category_name] = [l.sub_category_name for l in i.sub_categories]
+    return d
