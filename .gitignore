@@ -4,3 +4,4 @@ pics.db
 config.py
 /.vscode
 /src/__pycache__
+!/.python-version
