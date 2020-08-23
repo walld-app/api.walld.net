@@ -14,9 +14,10 @@ FROM base
 
 COPY --from=builder /install /usr/local
 
+RUN apk add libpq --no-cache
 
 WORKDIR /app
 
-COPY src/ .
+COPY . .
 
-CMD python main.py
+CMD python walld_api/main.py
