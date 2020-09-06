@@ -37,11 +37,12 @@ jobs:
           IMAGE_ID=kz159/$IMAGE_NAME
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           
           if [ "$EVENT" = "repository_dispatch" ]
           then
             VERSION="latest-dev"
-          elif [ ${{ github.ref }} = "dev" ]
+          elif [ $VERSION = "dev" ]
           then
             VERSION="latest-dev"
           else
