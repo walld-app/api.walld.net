@@ -1,6 +1,6 @@
 """module that provides config for api service"""
 from os import getenv
-import logging
+from walld_db.helpers import logger_factory
 
 MAJOR_VERSION = 'v1'
 VERSION = '0.0.0.1'
@@ -12,10 +12,7 @@ DB_USER = getenv('DB_USER', 'postgres')
 DB_PASS = getenv('DB_PASS', '1234')
 LOG_LEVEL = getenv('LOG_LEVEL', 'INFO')
 
-logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
-                    level=LOG_LEVEL)
-
-log = logging.getLogger('Walld api_server')
+log = logger_factory('Walld api_server')
 
 log.info(f'got this vars!\n'
          f'DB_HOST = {DB_HOST}\n'
