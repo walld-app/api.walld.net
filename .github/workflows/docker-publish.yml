@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - dev
   
   repository_dispatch:
     types: [dev-db-updated]
@@ -35,10 +36,10 @@ jobs:
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           
-          if [ $EVENT = "push" ]; then
-              VERSION="latest"
+          if [ $EVENT = "repository_dispatch" ] || [ ${{ github.ref }} = "dev" ]; then
+              VERSION="latest-dev"
           else
-              VERSION='latest-dev'
+              VERSION='latest'
           fi
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
