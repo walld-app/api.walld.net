@@ -21,7 +21,7 @@ class ApiRequest(BaseModel):
 
 
 class ApiPicAnswer(BaseModel):
-    pic_id: int
+    id: int
     colours: List[str]
     source_url: str
     url: str
