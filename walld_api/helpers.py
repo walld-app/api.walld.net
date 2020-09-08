@@ -10,7 +10,7 @@ def get_cats_sub_cats() -> dict:
     d = {}
     cats = db.categories_objects
     for i in cats:
-        d[i.category_name] = [l.sub_category_name for l in i.sub_categories]
+        d[i.name] = [l.name for l in i.sub_categories]
     return d
 
 
@@ -21,7 +21,7 @@ class ApiRequest(BaseModel):
 
 
 class ApiPicAnswer(BaseModel):
-    pic_id: int
+    id: int
     colours: List[str]
     source_url: str
     url: str

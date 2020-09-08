@@ -1,4 +1,4 @@
-'''main launcher of api'''
+"""main launcher of api"""
 from aiohttp import web
 
 from views import health_check, get_info, get_picture
