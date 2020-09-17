@@ -18,6 +18,7 @@ class ApiRequest(BaseModel):
     category: Optional[str]
     sub_category: Optional[str]
     tags: Optional[List[str]]
+    colours: Optional[List[str]]
 
 
 class ApiPicAnswer(BaseModel):
