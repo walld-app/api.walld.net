@@ -14,10 +14,13 @@ FROM base
 
 COPY --from=builder /install /usr/local
 
-RUN apk add libpq --no-cache
+RUN apk add libpq curl --no-cache
 
 WORKDIR /app
 
 COPY . .
+
+HEALTHCHECK --interval=5m --timeout=3s \
+  CMD curl -f http:8000//localhost/ || exit 1
 
 CMD python walld_api/main.py
