@@ -1,5 +1,5 @@
 from aiohttp import web
-from routes import APP
+from app import Server
 
 if __name__ == '__main__':
-    web.run_app(APP)
+    Server().run()
