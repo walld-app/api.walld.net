@@ -1,6 +1,6 @@
 """all methods of api stored here"""
 from aiohttp import web
-from config import VERSION
+from config import VERSION, log
 from helpers import db, get_cats_sub_cats, ApiRequest, ApiPicAnswer
 from random import choice
 
@@ -35,14 +35,19 @@ def get_picture(request):
     questions = request.query
     if not questions:
         pic = choice(db.picture_objects)  # nosec
+        log.debug('Got no questions!')
     else:
         questions = ApiRequest(**questions)
+        log.debug(f"Got this params! {questions}")
+
         if questions.sub_category and not questions.category:
             raise web.HTTPClientError
+
         pics = db.get_pics(**questions.dict())
 
         if not pics:
             raise web.HTTPNotFound
+
         pic = choice(pics)  # nosec
 
     pic = ApiPicAnswer(**pic.__dict__)
