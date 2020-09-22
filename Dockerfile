@@ -21,6 +21,6 @@ WORKDIR /app
 COPY . .
 
 HEALTHCHECK --interval=5m --timeout=3s \
-  CMD curl -f http:8080//localhost/ || exit 1
+  CMD curl -f http:8080//localhost/
 
 CMD python walld_api/main.py
